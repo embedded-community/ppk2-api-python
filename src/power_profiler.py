@@ -26,48 +26,43 @@ class PowerProfiler():
                 self.ppk2 = PPK2_API(serial_port)
 
         try:
-            ret = self.ppk2.get_modifiers()  # try to read modifiers, if it fails serial port is probably not correct
-            print(f"Initialized ppk2 api: {ret}")
+            self.ppk2.get_modifiers()  # try to read modifiers, if it fails serial port is probably not correct
+            print("Initialized ppk2 api")
         except Exception as e:
             print(f"Error initializing power profiler: {e}")
-            ret = None
             raise e
 
-        if not ret:
-            self.ppk2 = None
-            raise Exception(f"Error when initing PowerProfiler with serial port {serial_port}")
-        else:
-            self.ppk2.use_source_meter()
+        self.ppk2.use_source_meter()
 
-            self.source_voltage_mV = source_voltage_mV
+        self.source_voltage_mV = source_voltage_mV
 
-            self.ppk2.set_source_voltage(self.source_voltage_mV)  # set to 3.3V
+        self.ppk2.set_source_voltage(self.source_voltage_mV)  # set to 3.3V
 
-            print(f"Set power profiler source voltage: {self.source_voltage_mV}")
+        print(f"Set power profiler source voltage: {self.source_voltage_mV}")
 
-            self.measuring = False
-            self.current_measurements = []
+        self.measuring = False
+        self.current_measurements = []
 
-            # local variables used to calculate power consumption
-            self.measurement_start_time = None
-            self.measurement_stop_time = None
+        # local variables used to calculate power consumption
+        self.measurement_start_time = None
+        self.measurement_stop_time = None
 
-            time.sleep(1)
+        time.sleep(1)
 
-            self.stop = False
+        self.stop = False
 
-            self.measurement_thread = Thread(target=self.measurement_loop, daemon=True)
-            self.measurement_thread.start()
+        self.measurement_thread = Thread(target=self.measurement_loop, daemon=True)
+        self.measurement_thread.start()
 
-            # write to csv
-            self.filename = filename
-            if self.filename is not None:
-                with open(self.filename, 'w', newline='') as file:
-                    writer = csv.writer(file)
-                    row = []
-                    for key in ["ts", "avg1000"]:
-                        row.append(key)
-                    writer.writerow(row)
+        # write to csv
+        self.filename = filename
+        if self.filename is not None:
+            with open(self.filename, 'w', newline='') as file:
+                writer = csv.writer(file)
+                row = []
+                for key in ["ts", "avg1000"]:
+                    row.append(key)
+                writer.writerow(row)
 
     def write_csv_rows(self, samples):
         """Write csv row"""
@@ -127,7 +122,7 @@ class PowerProfiler():
             if self.measuring:  # read data if currently measuring
                 read_data = self.ppk2.get_data()
                 if read_data != b'':
-                    samples = self.ppk2.get_samples(read_data)
+                    samples, raw_digital = self.ppk2.get_samples(read_data)
                     self.current_measurements += samples  # can easily sum lists, will append individual data
             time.sleep(0.001)  # TODO figure out correct sleep duration
 
